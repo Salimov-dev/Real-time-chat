@@ -5,8 +5,10 @@ import TextContainer from "../TextContainer/TextContainer";
 import Messages from "../Messages/Messages";
 import InfoBar from "../InfoBar/InfoBar";
 import Input from "../Input/Input";
-
 import "./Chat.css";
+import { useLocation } from "react-router-dom";
+
+let socket;
 
 const Chat = () => {
   const [name, setName] = useState("");
@@ -14,17 +16,38 @@ const Chat = () => {
   const [users, setUsers] = useState("");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const location = useLocation();
+  const ENDPOINT = "localhost:5000";
 
   const sendMessage = (event) => {
     event.preventDefault();
-
-    useEffect(() => {});
-    useEffect(() => {});
 
     if (message) {
       socket.emit("sendMessage", message, () => setMessage(""));
     }
   };
+
+  useEffect(() => {
+    const { name, room } = queryString.parse(location.search);
+
+    socket = io(ENDPOINT);
+
+    setRoom(room);
+    setName(name);
+
+    socket.emit("join", { name, room }, () => {});
+
+    return () => {
+      socket.emit("disconnect");
+      socket.off();
+    };
+  }, [ENDPOINT, location.search]);
+
+  useEffect(() => {
+    socket.on("message", (message) => {
+      setMessages([...messages, message]);
+    });
+  }, [messages]);
 
   return (
     <div className="outerContainer">
